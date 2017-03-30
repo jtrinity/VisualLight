@@ -509,6 +509,16 @@ class MainApp(tk.Tk):
             self.build_stim(self.fixation, 'gray', 1)
             
             stim_function()
+            
+            self.window.winHandle.minimize() # minimise the PsychoPy window
+            self.window.winHandle.set_fullscreen(False) # disable fullscreen
+            self.window.flip() # redraw the (minimised) window
+
+            self.window.winHandle.maximize()
+            self.window.winHandle.set_fullscreen(True) 
+            self.window.winHandle.activate()
+            self.window.flip()
+
                         
             #set trigger high on first frame flip
             self.window.callOnFlip(trigger.write, 1.0)
@@ -555,6 +565,14 @@ class MainApp(tk.Tk):
                             
             print "total frames shown: " + str(len(self.frame_list))
             
+            while(True):
+                if 'escape' in psyevent.getKeys():
+                    break
+            self.window.winHandle.set_fullscreen(False)
+            
+            self.open_experiment_window()
+            self.open_experiment_window()
+            
             self.deiconify()
             
         return wrapper
@@ -595,13 +613,13 @@ class MainApp(tk.Tk):
         self.phase_startdelay.set_entry(fields["phaseStartDelay"])
         self.phase_relaxation.set_entry(fields["phaseRelaxation"])
         self.drift_startdelay.set_entry(fields["driftStartDelay"])
-        self.drift_startdelay.set_entry(fields["driftStartDelay"])
+        self.drift_relaxation.set_entry(fields["driftRelaxation"])
         self.drift_duration.set_entry(fields["driftDuration"])
         
         return
     
     def abort_run(self):
-        if self.window is not None:
+        if self.self.windowdow is not None:
             self.ABORT = True
             self.abort_warning_string.set("aborting")
 
