@@ -124,6 +124,11 @@ class Entry(tk.Frame):
     
     def get(self):
         return self.entry.get()
+    
+    def set_entry(self, v):
+        self.entry.delete(0,tk.END)
+        self.entry.insert(0,v)
+        return
 
 
 #-----Main Application-----
@@ -338,6 +343,7 @@ class MainApp(tk.Tk):
             self.window = visual.Window(size=[self.hres,self.vres],monitor=self.mon, fullscr = False ,allowGUI = True, units="deg", screen = self.experiment_window)
             self.window.waitBlanking = False
             self.fixation = visual.GratingStim(win=self.window, size=200, pos=[0,0], sf=0, color=[self.gray_level, self.gray_level, self.gray_level])
+            self.fixation.setAutoLog(False)
             self.fixation.draw()
             self.window.flip()
             self.open_screen_button.button_text.set("Close Window")
@@ -487,27 +493,29 @@ class MainApp(tk.Tk):
             
             self.withdraw()
             self.stim = visual.GratingStim(tex = self.texture, win=self.window, mask=None, size=200, pos=[0,0], sf=self.spatial_freq , ori=135)
+            self.stim.setAutoLog(False)
             self.window.setRecordFrameIntervals(True)
             self.window._refreshThreshold=1/60.0+0.002
+            
             #set the log module to report warnings to the std output window (default is errors only)
+            lastLog = logging.LogFile("lastRun.log", level = logging.WARNING, filemode = 'w')
+            timestamps = list()
+            #centralLog = logging.LogFile("psychopyExps.log", level=logging.WARNING, filemode='a')
             logging.console.setLevel(logging.WARNING)
             
+            fields = self.get_all_fields()
+            
+            #All experiments given 1 second min padding
             self.build_stim(self.fixation, 'gray', 1)
             
             stim_function()
-            
-            #ALWAYS GIVE PSYCHOPY TIME TO SPOOL UP AND DOWN OR YOU WILL SEE TIMING ERRORS
-            #use nonzero start delay
-#            for frame in range(300):
-#                self.fixation.draw()
-#                self.window.flip()
-            
+                        
             #set trigger high on first frame flip
             self.window.callOnFlip(trigger.write, 1.0)
             
             run_clock = core.Clock()
             logging.setDefaultClock(run_clock)
-            self.window.logOnFlip(level=logging.exp, msg=str("begin trial"))
+            #self.window.logOnFlip(level=logging.exp, msg=str("begin trial"))
             for i in range(len(self.frame_list)):
                 if 'escape' in psyevent.getKeys():
                     self.deiconify()
@@ -526,27 +534,71 @@ class MainApp(tk.Tk):
                 self.frame_list[i]["draw"]()
                 
                 if(i > 0 and self.frame_list[i]["type"] != self.frame_list[i-1]["type"]):
-                    self.window.logOnFlip(level=logging.exp, msg=str(self.frame_list[i]["type"])+" "+str(self.frame_list[i]["orientation"]))
+                    #self.window.logOnFlip(level=logging.exp, msg=str(self.frame_list[i]["type"])+" "+str(self.frame_list[i]["orientation"]))
+                    timestamps.append((run_clock.getTime(), self.frame_list[i]["type"], self.frame_list[i]["orientation"]))
 
                 self.window.flip()
     
     
             self.fixation.draw()
             self.window.callOnFlip(trigger.write, 0.0)
-            self.window.logOnFlip(level=logging.exp, msg=str("end trial"))
+            #self.window.logOnFlip(level=logging.exp, msg=str("end trial"))
             self.window.flip()
             logging.flush()
             self.window.setRecordFrameIntervals(False)
             
-            self.ABORT = False
-            self.abort_warning_string.set("ready")
             self.update()
+            
+            #save data
+            target = "lastRun.csv"
+            self.save_to_csv(target, fields, timestamps)
+                            
             print "total frames shown: " + str(len(self.frame_list))
             
             self.deiconify()
             
         return wrapper
 
+    def get_all_fields(self):
+        fields = dict()
+        fields["startDelay"] = self.get_num_field(self.mix_startdelay)[0]
+        fields["relaxation"] = self.get_num_field(self.mix_relaxation)[0]
+        
+        fields["phaseSessions"] = int(self.get_num_field(self.phase_sessions)[0])
+        fields["reversals"] = int(self.get_num_field(self.phase_reversals)[0])
+        fields["frequency"] = self.get_num_field(self.phase_frequency)[0]
+        fields["phaseOrientations"] = self.get_num_field(self.phase_orientation)
+        
+        fields["driftSessions"] = int(self.get_num_field(self.drift_sessions)[0])
+        fields["driftRate"] = self.get_num_field(self.drift_rate_entry)[0]
+        fields["driftDuration"] = self.get_num_field(self.drift_duration)[0]
+        fields["driftOrientations"] = self.get_num_field(self.drift_orientation)
+        
+        fields["phaseStartDelay"] = self.get_num_field(self.phase_startdelay)[0]
+        fields["phaseRelaxation"] = self.get_num_field(self.phase_relaxation)[0]
+        fields["driftStartDelay"] = self.get_num_field(self.drift_startdelay)[0]
+        fields["driftRelaxation"] = self.get_num_field(self.drift_relaxation)[0]
+        
+        return fields
+    
+    def set_all_fields(self, fields):
+        self.mix_startdelay.set_entry(fields["startDelay"])
+        self.mix_relaxation.set_entry(fields["relaxation"])
+        self.phase_sessions.set_entry(fields["phaseSessions"])
+        self.phase_reversals.set_entry(fields["reversals"])
+        self.phase_frequency.set_entry(fields["frequency"])
+        self.phase_orientation.set_entry(fields["phaseOrientations"])
+        self.drift_sessions.set_entry(fields["driftSessions"])
+        self.drift_rate_entry.set_entry(fields["driftRate"])
+        self.drift_duration.set_entry(fields["driftDuration"])
+        self.drift_orientation.set_entry(fields["driftOrientations"])
+        self.phase_startdelay.set_entry(fields["phaseStartDelay"])
+        self.phase_relaxation.set_entry(fields["phaseRelaxation"])
+        self.drift_startdelay.set_entry(fields["driftStartDelay"])
+        self.drift_startdelay.set_entry(fields["driftStartDelay"])
+        self.drift_duration.set_entry(fields["driftDuration"])
+        
+        return
     
     def abort_run(self):
         if self.window is not None:
@@ -593,6 +645,23 @@ class MainApp(tk.Tk):
     def load(self):
         files = tkFileDialog.askopenfilenames()
         self.file_list = list(files)
+        fn = self.file_list[0]
+        try:
+            with open(fn, 'rb') as csv_file:
+                reader = csv.reader(csv_file, delimiter = ',')
+                field_names = reader.next()
+                field_values = reader.next()
+                
+                fields = {field_names[i]:field_values[i] for i in range(len(field_names))}
+                
+                fields["phaseOrientations"] = ''.join( c for c in fields["phaseOrientations"] if  c not in '[]' )
+                fields["driftOrientations"] = ''.join( c for c in fields["driftOrientations"] if  c not in '[]' )
+                
+                self.set_all_fields(fields)
+        except IOError:
+            print "Unable to open file. Is it open in another program?"
+            
+        return
     
     def file_to_array(self, fn):
         with open(fn, 'rb') as open_file:
@@ -602,6 +671,21 @@ class MainApp(tk.Tk):
         with open(fn, 'rb') as csv_file:
             reader = csv.reader(csv_file, delimiter = ',')
             self.data.append(np.array(reader))
+            
+    def save_to_csv(self, target, fields, timestamps):
+        try:
+            with open(target, 'w+') as fn:
+                fn.seek(0)
+                w=csv.writer(fn, delimiter = ',', lineterminator = "\n")
+                w.writerow(fields.keys())
+                w.writerow(fields.values())
+                for i in range(len(timestamps)):
+                    w.writerow(timestamps[i])
+                fn.truncate()
+        except IOError:
+            print "Unable to open file. Is it open in another program?"
+            
+        return
 
               
 #-----Windows-----
