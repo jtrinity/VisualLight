@@ -1,6 +1,0 @@
-reversals,driftRate,driftStartDelay,phaseStartDelay,driftDuration,phaseRelaxation,driftOrientations,startDelay,frequency,relaxation,phaseOrientations,driftSessions,driftRelaxation,phaseSessions
-10,1.0,1.0,5.0,1.0,3.0,[0.0],5.0,2.0,3.0,[0.0],2,1.0,5
-1.9945349992485717,drift,0.0
-2.993930627955706,gray,0
-3.9937861473008525,drift,0.0
-4.993381917258375,gray,0

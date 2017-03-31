@@ -221,6 +221,9 @@ class MainApp(tk.Tk):
         self.vertical_resolution_entry = Entry(self.entry_frame, "Vert. Res (px)", (1,1))
         self.vertical_resolution_entry.entry.insert(0, 1024)
         
+        self.save_file_entry = Entry(self.entry_frame, "Experiment Name", (2,0))
+        self.save_file_entry.entry.insert(0, "LastRun")
+        
 
         #Standard Phase Reversal
         self.phase_title_frame= tk.Frame(self.phase_reversal_frame)
@@ -503,6 +506,7 @@ class MainApp(tk.Tk):
             #centralLog = logging.LogFile("psychopyExps.log", level=logging.WARNING, filemode='a')
             logging.console.setLevel(logging.WARNING)
             
+            save_file_name = self.save_file_entry.entry.get()
             fields = self.get_all_fields()
             
             #All experiments given 1 second min padding
@@ -560,8 +564,7 @@ class MainApp(tk.Tk):
             self.update()
             
             #save data
-            target = "lastRun.csv"
-            self.save_to_csv(target, fields, timestamps)
+            self.save_to_csv(save_file_name + ".csv", fields, timestamps)
                             
             print "total frames shown: " + str(len(self.frame_list))
             
